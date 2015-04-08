@@ -13,8 +13,6 @@ namespace PlayFabPowerTools
 
         static void Main(string[] args)
         {
-            PlayFabManager.ToolSettings.DeveloperSecretKey = "RE1MQYHWFAQ3S335GU6JIDYNM3BDOM9AI3YZPUEMHFBPEP3K1W";
-            PlayFabManager.ToolSettings.URI = "https://721f.playfabapi.com";
             string line;
 
             _manager = new CommandManager();
