@@ -34,7 +34,9 @@ namespace PlayFabPowerTools
                     CloudScriptRevision = 1,
                     CloudScriptVersion = 1,
                     DeveloperSecretKey = "[Add your developer secret key from playfab]",
-                    DevelopmentMode = true
+                    DevelopmentMode = true,
+                    ModulesPath = @"\modules",
+                    RootPath = @"data\files"
                 };
 
                 var settings = JsonConvert.SerializeObject(pfts);
@@ -114,10 +116,45 @@ namespace PlayFabPowerTools
             });
         }
 
+        public void Build()
+        {
+            var path = string.Format("{0}{1}", ToolSettings.RootPath, ToolSettings.ModulesPath);
+            var cloudScriptBuilder = new StringBuilder();
+            cloudScriptBuilder.Append("/* \r");
+            cloudScriptBuilder.Append("* This file is auto-generated, do not modify \r");
+            cloudScriptBuilder.Append("*/ \r\r");
+
+            if (Directory.Exists(path))
+            {
+                foreach (var filePath in Directory.GetFiles(path))
+                {
+                    var filename = Path.GetFileName(filePath);
+                    var contents = string.Empty;
+                    using (StreamReader sr = File.OpenText(filePath))
+                    {
+                        cloudScriptBuilder.Append(sr.ReadToEnd());
+                    }
+                    cloudScriptBuilder.Append("\r");
+                }
+
+                using (var sw = File.CreateText(string.Format(@"{0}/{1}", ToolSettings.RootPath, "CloudScript.js")))
+                {
+                    sw.WriteLine(cloudScriptBuilder.ToString());
+                    sw.Flush();
+                }
+
+                Console.WriteLine("Build Complete!");
+            }
+            else
+            {
+                Console.WriteLine(string.Format("{0}{1}", "Directory not found:", path));
+            }
+        }
+
         public void Publish()
         {
             List<CloudScriptFile> files = new List<CloudScriptFile>();
-            var dirPath = @"data\Files";
+            var dirPath = ToolSettings.RootPath;
             if (Directory.Exists(dirPath))
             {
                 foreach (var filePath in Directory.GetFiles(dirPath))
@@ -162,12 +199,21 @@ namespace PlayFabPowerTools
                         {
                             if (!result.IsFaulted)
                             {
-                                GetCloudScriptRevision(false);
+                                if (result.Result.Error != null)
+                                {
+                                    CommandManager.WriteAsync(string.Format("Error:{0}",result.Result.Error.ErrorMessage),ConsoleColor.Red);
+                                }
+                                else
+                                {
+                                    GetCloudScriptRevision(false);
+                                    CommandManager.WriteAsync(string.Format("Publishing - {0}", filePath), ConsoleColor.Yellow);
+                                }
+                            }
+                            else
+                            {
+                                CommandManager.WriteAsync("Error: Not Published", ConsoleColor.Red);
                             }
                         });
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.WriteLine(string.Format("Publishing - {0}", filePath));
-                        Console.ResetColor();
                     }
                     else
                     {
@@ -179,6 +225,8 @@ namespace PlayFabPowerTools
 
         public void Pull()
         {
+            Console.WriteLine("Use git repository to manage versions until playfab supports multiple files.");
+            /*
             var dirPath = @"data\files";
             if( !Directory.Exists( dirPath ) )
             {
@@ -196,7 +244,8 @@ namespace PlayFabPowerTools
                         Console.WriteLine( string.Format( "Recieved File: {0}", cloudScript.Filename ) );
                     }
                 }
-            }
+            }*/
+
         }
 
         public void GetVersion()
@@ -224,5 +273,7 @@ namespace PlayFabPowerTools
         public int? CloudScriptRevision { get; set; }
         public int? CloudScriptVersion { get; set; }
         public bool DevelopmentMode { get; set; }
+        public string ModulesPath { get; set; }
+        public string RootPath { get; set; }
     }
 }

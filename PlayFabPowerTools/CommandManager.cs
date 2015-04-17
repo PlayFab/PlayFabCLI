@@ -9,7 +9,7 @@ namespace PlayFabPowerTools
     public class CommandManager
     {
         //ENUM for available commands
-        public enum CommandTypes { UNKNOWN, HELP, CLEAR, EXIT, PUBLISH, VERSION, PULL }
+        public enum CommandTypes { UNKNOWN, HELP, CLEAR, EXIT, PUBLISH, VERSION, PULL, BUILD }
 
         public CommandTypes GetCommand(string arg)
         {
@@ -30,6 +30,8 @@ namespace PlayFabPowerTools
                     return CommandTypes.VERSION;
                 case "pull":
                     return CommandTypes.PULL;
+                case "build":
+                    return CommandTypes.BUILD;
                 default:
                     return CommandTypes.UNKNOWN;
             }
@@ -39,6 +41,20 @@ namespace PlayFabPowerTools
         public static void Prompt(){
             Console.WriteLine("");
             Console.Write(">");
+        }
+
+        public static void WriteAsync(string msg, ConsoleColor color)
+        {
+            Write(msg, color);
+            Prompt();
+        }
+
+        public static void Write(string msg, ConsoleColor color)
+        {
+            Console.ForegroundColor = color;
+            Console.WriteLine(msg);
+            Console.ResetColor();
+
         }
 
     }

@@ -71,6 +71,11 @@ namespace PlayFabPowerTools
                     _playFabManager.Pull();
                 }
 
+                if (command == CommandManager.CommandTypes.BUILD)
+                {
+                    _playFabManager.Build();
+                }
+
                 Console.WriteLine("");
                 Console.Write(">");
             } while (line != null);
