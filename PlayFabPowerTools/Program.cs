@@ -33,9 +33,13 @@ namespace PlayFabPowerTools
                     Console.WriteLine( "" );
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     Console.WriteLine( "Clear - Clears the console screen" );
+                    Console.WriteLine("");
                     Console.WriteLine( "Version - Outputs the current version of the cloudscript." );
-                    Console.WriteLine( "Publish - Uploads any changes to The CloudScript to the server." );
-                    Console.WriteLine( "Pull - Pulls down the existing cloudscript file and saves it into data/files/ directory." );
+                    Console.WriteLine("");
+                    Console.WriteLine("Publish - Uploads any changes to The CloudScript to the server.");
+                    Console.WriteLine("use 'Publish /newversion' to increment the version instead of the revision.");
+                    Console.WriteLine("");
+                    Console.WriteLine("Pull - Pulls down the existing cloudscript file and saves it into data/files/ directory.");
                     Console.ResetColor();
                 }
 
@@ -51,7 +55,15 @@ namespace PlayFabPowerTools
 
                 if (command == CommandManager.CommandTypes.PUBLISH)
                 {
-                    _playFabManager.Publish();
+                    if (line.Contains("/newversion"))
+                    {
+                        _playFabManager.Publish(true);
+                    }
+                    else
+                    {
+                        _playFabManager.Publish();
+                    }
+                    
                 }
 
                 if (command == CommandManager.CommandTypes.VERSION)

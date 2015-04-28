@@ -120,9 +120,8 @@ namespace PlayFabPowerTools
         {
             var path = string.Format("{0}{1}", ToolSettings.RootPath, ToolSettings.ModulesPath);
             var cloudScriptBuilder = new StringBuilder();
-            cloudScriptBuilder.Append("/* \r");
-            cloudScriptBuilder.Append("* This file is auto-generated, do not modify \r");
-            cloudScriptBuilder.Append("*/ \r\r");
+            cloudScriptBuilder.Append("//This file is auto-generated, do not modify \n\r");
+            //cloudScriptBuilder.Append("\n\r");
 
             if (Directory.Exists(path))
             {
@@ -151,7 +150,7 @@ namespace PlayFabPowerTools
             }
         }
 
-        public void Publish()
+        public void Publish(bool newVersion = false)
         {
             List<CloudScriptFile> files = new List<CloudScriptFile>();
             var dirPath = ToolSettings.RootPath;
@@ -191,13 +190,19 @@ namespace PlayFabPowerTools
                     {
                         var csfiles = new List<CloudScriptFile>();
                         csfiles.Add(csfile);
+                        int? version = ToolSettings.CloudScriptVersion;
+                        if(newVersion){
+                            version = ToolSettings.CloudScriptVersion + 1;
+                        }
+
                         PlayFabAdminAPI.UpdateCloudScriptAsync(new UpdateCloudScriptRequest()
                         {
                             Files = csfiles,
-                            Version = ToolSettings.CloudScriptVersion + 1
+                            Version = version
                         }).ContinueWith((result) =>
                         {
-                            if (!result.IsFaulted)
+                            Console.WriteLine("test");
+                            if (!result.IsFaulted && result.IsCompleted)
                             {
                                 if (result.Result.Error != null)
                                 {
