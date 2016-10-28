@@ -3,93 +3,148 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PlayFabPowerTools.Packages;
+using PlayFabPowerTools.Services;
 
 namespace PlayFabPowerTools
 {
     class Program
     {
-        static CommandManager _manager;
-        static PlayFabManager _playFabManager;
-
+        private static iStatePackage _currentPackage;
+        private static bool _isTypedTextHidden = false;
+        private static string _line;
+        private static StringBuilder _lineSb;
+        private static bool _argsRead;
+        private static string[] _args = new string[0];
+        private static bool _readLine = false;
+        private static bool _isCLI = false;
         static void Main(string[] args)
         {
-            string line;
+            _args = args;
+            _lineSb = new StringBuilder();
 
-            _manager = new CommandManager();
-            Console.WriteLine("Welcome to PlayFab Power Tools");
-            Console.WriteLine("Type: Help for a list of commands");
-            _playFabManager = new PlayFabManager();
+            //Parse Args and determine if this is a CLI or Console mode.
+            if (args.Length > 0 && !_argsRead)
+            {
+                _isCLI = true;
+                foreach (var a in args)
+                {
+                    _lineSb.Append(a + " ");
+                }
+                _line = _lineSb.ToString();
+                _argsRead = true;
+                _args = new string[0];
+            }
+            else
+            {
+                _readLine = true;
+                _argsRead = true;
+            }
 
+            //Init PlayFab Service Settings
+            PlayFabService.Init();
+            //Load Settings File
+            PlayFabService.Load();
+            
+            //Create main loop 
+            var _mainLoopPackage = new MainLoopPackage();
+
+            //Out put to screen some fancy playfab jazz
+            Console.WriteLine("");
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.Write(".oO={ ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write("PlayFab Power Tools CLI");
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.Write(" }=Oo.");
+            Console.ForegroundColor = ConsoleColor.White;
+
+            //if this is a console app then we want to show them how to get help.
+            if (!_isCLI)
+            {
+                Console.WriteLine("");
+                Console.WriteLine("Type: 'Help' for a list of commands");
+                Console.WriteLine("");
+                Console.Write(">");
+            }
+            else
+            {
+                Console.WriteLine("");
+                Console.WriteLine("");
+            }
+
+            //Load all the packages that process commands
+            var type = typeof(iStatePackage);
+            var types = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(s => s.GetTypes())
+                .Where(p => type.IsAssignableFrom(p) && p.Name != "iStatePackage");
+
+            //foreach package we need to register with MainLoop
+            foreach (var t in types)
+            {
+                var packageType = (iStatePackage)Activator.CreateInstance(t);
+                packageType.RegisterMainPackageStates(packageType);
+            }
+
+            //This is the main program loop.
             do
             {
-                line = Console.ReadLine();
-                var command = _manager.GetCommand(line);
-
-                if (command == CommandManager.CommandTypes.HELP)
+                //if we are a console app, read the command that is entered.
+                if (_args.Length == 0 && _readLine)
                 {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine( "" );
-                    Console.WriteLine("Command Usages:");
-                    Console.WriteLine( "" );
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.WriteLine( "Clear - Clears the console screen" );
-                    Console.WriteLine("");
-                    Console.WriteLine( "Version - Outputs the current version of the cloudscript." );
-                    Console.WriteLine("");
-                    Console.WriteLine("Publish - Uploads any changes to The CloudScript to the server.");
-                    Console.WriteLine("use 'Publish /newversion' to increment the version instead of the revision.");
-                    Console.WriteLine("");
-                    Console.WriteLine("Pull - Pulls down the existing cloudscript file and saves it into data/files/ directory.");
-                    Console.ResetColor();
-                }
-
-                if (command == CommandManager.CommandTypes.UNKNOWN)
-                {
-                    Console.WriteLine("Invalid or Unknown command");
-                }
-
-                if (command == CommandManager.CommandTypes.CLEAR)
-                {
-                    Console.Clear();
-                }
-
-                if (command == CommandManager.CommandTypes.PUBLISH)
-                {
-                    if (line.Contains("/newversion"))
+                    if (!_isTypedTextHidden)
                     {
-                        _playFabManager.Publish(true);
+                        //Read the line input from the console.
+                        _line = Console.ReadLine();
                     }
                     else
                     {
-                        _playFabManager.Publish();
+                        //Read the line in a different way.
+                        ConsoleKeyInfo key;
+                        do
+                        {
+                            key = Console.ReadKey(true);
+                            if (key.Key != ConsoleKey.Enter)
+                            {
+                                var s = string.Format("{0}", key.KeyChar);
+                                _lineSb.Append(s);
+                            }
+                        } while (key.Key != ConsoleKey.Enter);
+                        _line = _lineSb.ToString();
                     }
-                    
                 }
 
-                if (command == CommandManager.CommandTypes.VERSION)
+                //Set read line to true, not it will only be false if we came from a CLI.
+                _readLine = true;
+                //Set the state for the package based on what was entered.
+                _mainLoopPackage.SetState(_line);
+                //get the correct package for the state we are in
+                _currentPackage = _mainLoopPackage.GetPackage();
+                //process the package state
+                _isTypedTextHidden = _currentPackage.SetState(_line);
+                //do package loop, which contains logic to do stuff.
+                var loopReturn = _currentPackage.Loop();
+
+                //if this is a CLI then we just want to exit.
+                if (!_isCLI)
                 {
-                    _playFabManager.GetVersion();
+                    //Prompt or exit.
+                    if (!loopReturn)
+                    {
+                        Console.Write(">");
+                    }
+                    else
+                    {
+                        _line = null;
+                    }
                 }
-
-                if (command == CommandManager.CommandTypes.EXIT)
+                else
                 {
-                    return;
+                    _line = null;
                 }
-
-                if( command == CommandManager.CommandTypes.PULL )
-                {
-                    _playFabManager.Pull();
-                }
-
-                if (command == CommandManager.CommandTypes.BUILD)
-                {
-                    _playFabManager.Build();
-                }
-
-                Console.WriteLine("");
-                Console.Write(">");
-            } while (line != null);
-            
+            } while (_line != null);
+            //Always save before we completely exit.
+            PlayFabService.Save();
         }
     }
 }

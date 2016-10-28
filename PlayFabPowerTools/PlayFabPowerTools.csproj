@@ -36,12 +36,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="PlayFabServerSDK, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\PlayFabServerSDK.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -49,13 +46,27 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CommandManager.cs" />
-    <Compile Include="PlayFabManager.cs" />
+    <Compile Include="Packages\ConsoleHelpPackage.cs" />
+    <Compile Include="Packages\iStatePackage.cs" />
+    <Compile Include="Packages\MainLoopPackage.cs" />
+    <Compile Include="Packages\PlayFabLoginPackage.cs" />
+    <Compile Include="Packages\PlayFabMigrateTitlePackage.cs" />
+    <Compile Include="Packages\SetupStoresPackage.cs" />
+    <Compile Include="Services\HelpService.cs" />
+    <Compile Include="Utils\PlayFabEditorModels.cs" />
+    <Compile Include="Utils\PlayFabExtensions.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\PlayFabService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="E:\_GitRoot\_PlayFab\sdks\CSharpSDK\PlayFabSDK\PlayFabSDK.csproj">
+      <Project>{cca89497-1426-4f0b-8a11-7e5fb965fb4b}</Project>
+      <Name>PlayFabSDK</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
