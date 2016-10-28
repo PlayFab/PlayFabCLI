@@ -16,11 +16,11 @@ namespace PlayFabPowerTools.Services
             Console.WriteLine("Commands and Usages:");
             Console.WriteLine("");
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("Clear [--clear] - Clears the console screen");
+            Console.WriteLine("Help [help] - You are lookin at it.");
             Console.WriteLine("");
-            Console.WriteLine("Help [--help || --?] - You are lookin at it.");
+            Console.WriteLine("Login [login] - Login to playfab. Usage: login auto [username] [password] for autologin");
             Console.WriteLine("");
-            Console.WriteLine("Login [--login || --autologin] - Login to playfab, for autologin  pass  --user:[username] --pass:[password]");
+            Console.WriteLine("Migrate [migrate [from titleid] [to titleid] - migrate, titledata, cloudscript, files, catalogs and stores to a new title.");
             Console.WriteLine("");
             Console.WriteLine("Exit [--exit] - Exit this console app");
             Console.ResetColor();
