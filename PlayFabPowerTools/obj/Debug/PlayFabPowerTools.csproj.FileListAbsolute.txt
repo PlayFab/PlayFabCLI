@@ -24,4 +24,3 @@ C:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\bin\Debug\PlayFabPowerT
 C:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\bin\Debug\Newtonsoft.Json.dll
 C:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\bin\Debug\PlayFabAllSDK.dll
 C:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\obj\Debug\PlayFabPowerTools.csprojResolveAssemblyReference.cache
-C:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\bin\Debug\PlayFabAllSDK.pdb
