@@ -15,7 +15,11 @@ namespace PlayFabPowerTools.Packages
         /// <param name="package"></param>
         public void RegisterMainPackageStates(iStatePackage package)
         {
-            MainLoopPackage.PackageCache.Add(MainLoopPackage.MainPackageStates.SetStores, package);
+            List<MainPackageStates> states = new List<MainPackageStates>()
+            {
+                MainPackageStates.SetStores
+            };
+            PackageManagerService.RegisterMainPackageStates(states, package);
         }
 
         /// <summary>
@@ -41,7 +45,7 @@ namespace PlayFabPowerTools.Packages
         /// <returns></returns>
         public bool Loop()
         {
-            MainLoopPackage.SetState(MainLoopPackage.MainPackageStates.Idle);
+            PackageManagerService.SetState(MainPackageStates.Idle);
             return false;
         }
     }

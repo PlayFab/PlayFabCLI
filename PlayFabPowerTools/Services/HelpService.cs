@@ -24,7 +24,6 @@ namespace PlayFabPowerTools.Services
             Console.WriteLine("");
             Console.WriteLine("Exit [--exit] - Exit this console app");
             Console.ResetColor();
-            MainLoopPackage.SetState(MainLoopPackage.MainPackageStates.Idle);
         }
     }
 }

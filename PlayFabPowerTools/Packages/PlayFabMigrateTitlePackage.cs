@@ -48,7 +48,11 @@ namespace PlayFabPowerTools.Packages
 
         public void RegisterMainPackageStates(iStatePackage package)
         {
-           MainLoopPackage.PackageCache.Add(MainLoopPackage.MainPackageStates.Migrate, package);
+            List<MainPackageStates> states = new List<MainPackageStates>()
+            {
+                MainPackageStates.Migrate
+            };
+            PackageManagerService.RegisterMainPackageStates(states, package);
         }
 
         public bool SetState(string line)
@@ -73,8 +77,10 @@ namespace PlayFabPowerTools.Packages
             _cloudScriptData = new CloudScriptDataMigration();
             _cdnData = new CdnFileDataMigration();
             _catalogData = new CatalogDataMigration();
-            _storeData = new StoreDataMigration();
-            _storeData.StoreList = PlayFabService.Settings.StoreList;
+            _storeData = new StoreDataMigration
+            {
+                StoreList = PlayFabService.Settings.StoreList
+            };
 
             SetNextState();
             return false;
@@ -149,15 +155,16 @@ namespace PlayFabPowerTools.Packages
                         Console.WriteLine("Getting Title Data from: " + _commandArgs.FromTitleId);
                         PlayFabService.GetTitleData(_commandArgs.FromTitleId,(success,result) =>
                         {
-                            if (success)
+                            if (!success || result.Data.Count == 0)
+                            {
+                                Console.WriteLine("No Title Data found, skipping");
+                                SetNextState();
+                            }
+                            else
                             {
                                 Console.WriteLine("Title Data Keys Found: " + result.Data.Count.ToString());
                                 _titleData.Data = result.Data;
                                 _titleData.FromProcessed = true;
-                            }
-                            else
-                            {
-                                _cts.Cancel();
                             }
                         });
                     }
@@ -175,8 +182,8 @@ namespace PlayFabPowerTools.Packages
                         PlayFabService.UpdateTitleData(_commandArgs.ToTitleId, kvp , (success) =>
                         {
                             if (!success) { 
-                                Console.WriteLine("Save Title Data Failed.");
-                                _cts.Cancel();
+                                Console.WriteLine("Save Title Data Failed, skipping");
+                                SetNextState();
                             }
                         });
                     }
@@ -189,10 +196,10 @@ namespace PlayFabPowerTools.Packages
                         Console.WriteLine("Getting Currency Types Data from: " + _commandArgs.FromTitleId);
                         PlayFabService.GetCurrencyData(_commandArgs.FromTitleId, (success, vcData) =>
                         {
-                            if (!success)
+                            if (!success || vcData.Count == 0)
                             {
-                                Console.WriteLine("Error Fetching Currency Type Data, aborting migration.");
-                                _cts.Cancel();
+                                Console.WriteLine("Error Fetching Currency Type Data, skipping");
+                                SetNextState();
                                 return;
                             }
                             _currencyData.Data = vcData;
@@ -231,10 +238,10 @@ namespace PlayFabPowerTools.Packages
                         Console.WriteLine("Getting CloudScript Data from: " + _commandArgs.FromTitleId);
                         PlayFabService.GetCloudScript(_commandArgs.FromTitleId, (success, data) =>
                         {
-                            if (!success)
+                            if (!success || data.Count == 0)
                             {
-                                Console.WriteLine("Error Fetching CloudScript Data, aborting migration.");
-                                _cts.Cancel();
+                                Console.WriteLine("Error Fetching CloudScript Data, skipping.");
+                                SetNextState();
                                 return;
                             }
                             _cloudScriptData.Data = data;
@@ -268,7 +275,7 @@ namespace PlayFabPowerTools.Packages
                 case States.Files:
                     #region Update Content Files
                     //Start by creating a temp directory
-                    var path = AppDomain.CurrentDomain.BaseDirectory + "/temp";
+                    var path = AppDomain.CurrentDomain.BaseDirectory + "temp";
                     if (!Directory.Exists(path))
                     {
                         Directory.CreateDirectory(path);
@@ -279,8 +286,8 @@ namespace PlayFabPowerTools.Packages
                        {
                            if (!success)
                            {
-                               Console.WriteLine("Error Fetching CloudScript Data, aborting migration.");
-                               _cts.Cancel();
+                               Console.WriteLine("Error Fetching CloudScript Data, skipping");
+                               SetNextState();
                                return;
                            }
                            _cdnData.Data = data;
@@ -303,11 +310,16 @@ namespace PlayFabPowerTools.Packages
                         if (_cdnData.Data.Count > 0)
                         {
                             var isDone = false;
-                            PlayFabService.DownloadFile(_commandArgs.FromTitleId, path, _cdnData.popData(), (success, filePath) =>
+                            
+                            PlayFabService.DownloadFile(_commandArgs.FromTitleId, path, _cdnData.popData(), (success, filePath, data) =>
                             {
                                 if (success)
                                 {
-                                    _cdnData.FileList.Add(filePath);
+                                    _cdnData.FileList.Add(new CdnFileDataMigration.UploadFile()
+                                    {
+                                        Data = data,
+                                        FilePath = filePath
+                                    });
                                 }
                                 isDone = true;
                             });
@@ -351,8 +363,8 @@ namespace PlayFabPowerTools.Packages
                             {
                                 if (!success)
                                 {
-                                    Console.WriteLine("Error Fetching CloudScript Data, aborting migration.");
-                                    _cts.Cancel();
+                                    Console.WriteLine("Error Fetching CloudScript Data, skipping");
+                                    SetNextState();
                                 }
                                 _catalogData.Data = catalog;
                                 _catalogData.CatalogVersion = catalogVersion;
@@ -368,8 +380,8 @@ namespace PlayFabPowerTools.Packages
                             {
                                 if (!success)
                                 {
-                                    Console.WriteLine("Save Catalog Failed.");
-                                    _cts.Cancel();
+                                    Console.WriteLine("Save Catalog Failed, skipping.");
+                                    SetNextState();
                                 }
                                 _catalogData.Data = null;
                                 _catalogData.CatalogVersion = null;
@@ -392,6 +404,11 @@ namespace PlayFabPowerTools.Packages
 
                     if (!_storeData.FromProcessed)
                     {
+                        if (_storeData.StoreList.Count == 0)
+                        {
+                            SetNextState();
+                            break;
+                        }
                         var currentStoreId = _storeData.popStoreId();
                         Console.WriteLine("Getting Store Data for StoreID: " + currentStoreId);
                         PlayFabService.GetStoreData(_commandArgs.FromTitleId, currentStoreId, 
@@ -399,8 +416,8 @@ namespace PlayFabPowerTools.Packages
                             {
                                 if (!success)
                                 {
-                                    Console.WriteLine("Error Fetching Store Data, aborting migration.");
-                                    _cts.Cancel();
+                                    Console.WriteLine("Error Fetching Store Data, Skipping.");
+                                    SetNextState();
                                 }
                                 _storeData.FromProcessed = true;
                                 _storeData.Data = store;
@@ -418,8 +435,8 @@ namespace PlayFabPowerTools.Packages
                             {
                                 if (!success)
                                 {
-                                    Console.WriteLine("Save Store Failed.");
-                                    _cts.Cancel();
+                                    Console.WriteLine("Save Store Failed,  Skipping.");
+                                    SetNextState();
                                 }
                                 _storeData.Data = null;
                                 _storeData.CatalogVersion = null;
@@ -441,10 +458,9 @@ namespace PlayFabPowerTools.Packages
                 case States.Complete:
                     Console.WriteLine("Migration Complete.");
                     Console.ForegroundColor = ConsoleColor.White;
-                    MainLoopPackage.SetState(MainLoopPackage.MainPackageStates.Idle);
+                    PackageManagerService.SetState(MainPackageStates.Idle);
                     _cts.Cancel();
                     break;
-
             }
         }
 
@@ -484,7 +500,12 @@ namespace PlayFabPowerTools.Packages
     public class CdnFileDataMigration : DataMigration
     {
         public List<ContentInfo> Data = new List<ContentInfo>();
-        public List<string> FileList = new List<string>();
+        public List<UploadFile> FileList = new List<UploadFile>();
+        public class UploadFile
+        {
+            public ContentInfo Data;
+            public string FilePath;
+        }
 
         public ContentInfo popData()
         {
@@ -493,7 +514,7 @@ namespace PlayFabPowerTools.Packages
             return data;
         }
 
-        public string popFileList()
+        public UploadFile popFileList()
         {
             var data = FileList[0];
             FileList.Remove(data);

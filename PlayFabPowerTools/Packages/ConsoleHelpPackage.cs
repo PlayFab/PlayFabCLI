@@ -1,4 +1,5 @@
-﻿using PlayFabPowerTools.Services;
+﻿using System.Collections.Generic;
+using PlayFabPowerTools.Services;
 
 namespace PlayFabPowerTools.Packages
 {
@@ -6,7 +7,11 @@ namespace PlayFabPowerTools.Packages
     {
         public void RegisterMainPackageStates(iStatePackage package)
         {
-            MainLoopPackage.PackageCache.Add(MainLoopPackage.MainPackageStates.Help, package);
+            List<MainPackageStates> states = new List<MainPackageStates>()
+            {
+                MainPackageStates.Help
+            };
+            PackageManagerService.RegisterMainPackageStates(states, package);
         }
 
         public bool SetState(string line)
@@ -17,6 +22,7 @@ namespace PlayFabPowerTools.Packages
         public bool Loop()
         {
             HelpService.ShowHelp();
+            PackageManagerService.SetState(MainPackageStates.Idle);
             return false;
         }
     }

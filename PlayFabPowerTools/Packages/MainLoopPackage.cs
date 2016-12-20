@@ -3,42 +3,28 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PlayFabPowerTools.Services;
 
 namespace PlayFabPowerTools.Packages
 {
     public class MainLoopPackage : iStatePackage
     {
-        public static  Dictionary<MainPackageStates, iStatePackage> PackageCache = new Dictionary<MainPackageStates,iStatePackage>();
-
-        public enum MainPackageStates
+        public enum States
         {
-            Idle,
-            Exit,
-            Help,
-            Login,
-            Logout,
-            Migrate,
-            SetStores
-            
+            None,
+            Exit
         }
 
-        private static MainPackageStates _state = MainPackageStates.Idle;
-        private bool validCommand = false;
-
-        public iStatePackage GetPackage()
-        {
-            return PackageCache[_state];
-        }
+        private static States _state = States.None;
 
         public void RegisterMainPackageStates(iStatePackage package)
         {
-            PackageCache.Add(MainPackageStates.Idle, package);
-            PackageCache.Add(MainPackageStates.Exit, package);
-        }
-
-        public static void SetState(MainPackageStates state)
-        {
-            _state = state;
+            List<MainPackageStates> states = new List<MainPackageStates>()
+            {
+                MainPackageStates.Idle,
+                MainPackageStates.Exit
+            };
+            PackageManagerService.RegisterMainPackageStates(states, package);
         }
 
         public bool SetState(string line)
@@ -46,55 +32,24 @@ namespace PlayFabPowerTools.Packages
             
             var lline = line.ToLower();
 
-            if (lline.Contains("help") || lline.Contains("?"))
-            {
-                validCommand = true;
-                _state = MainPackageStates.Help;
-            }
-
-            if (lline.Contains("login") || lline.Contains("autologin"))
-            {
-                validCommand = true;
-                _state = MainPackageStates.Login;
-            }
-
-            if (lline.Contains("migrate"))
-            {
-                validCommand = true;
-                _state = MainPackageStates.Migrate;
-            }
-
-            if (lline.Contains("setstores"))
-            {
-                _state = MainPackageStates.SetStores;
-            }
-
-            if (lline.Contains("logout"))
-            {
-                validCommand = true;
-                _state = MainPackageStates.Logout;
-            }
-
             if (lline.Contains("exit"))
             {
-                _state = MainPackageStates.Exit;
+                _state = States.Exit;
             }
             return false;
         }
 
         public bool Loop()
         {
-            if (_state == MainPackageStates.Exit)
+            if (_state != States.Exit)
             {
-                return true;
+                return false;
             }
+            _state = States.None;
+            PackageManagerService.SetState(MainPackageStates.Idle);
 
-            if (_state != MainPackageStates.Idle)
-            {
-                //run the first iteration of the selected state loop.
-                PackageCache[_state].Loop();
-            }
-            return false;
+            //Returning true will exit the program.
+            return true;
         }
     }
 }

@@ -28,8 +28,12 @@ namespace PlayFabPowerTools.Packages
 
         public void RegisterMainPackageStates(iStatePackage package)
         {
-            MainLoopPackage.PackageCache.Add(MainLoopPackage.MainPackageStates.Login, package);
-            MainLoopPackage.PackageCache.Add(MainLoopPackage.MainPackageStates.Logout, package);
+            List<MainPackageStates> states = new List<MainPackageStates>()
+            {
+                MainPackageStates.Login,
+                MainPackageStates.Logout
+            };
+            PackageManagerService.RegisterMainPackageStates(states, package);
         }
 
         public bool SetState(string line)
@@ -94,7 +98,7 @@ namespace PlayFabPowerTools.Packages
                     {
                         if (!success)
                         {
-                            MainLoopPackage.SetState(MainLoopPackage.MainPackageStates.Idle);
+                            PackageManagerService.SetState(MainPackageStates.Idle);
                             _state = States.Idle;
                             waitForLogin = false;
                             return;
@@ -111,7 +115,7 @@ namespace PlayFabPowerTools.Packages
                     waitForLogin = true;
                     PlayFabService.GetStudios(_DeveloperClientToken, (success) =>
                     {
-                        MainLoopPackage.SetState(MainLoopPackage.MainPackageStates.Idle);
+                        PackageManagerService.SetState(MainPackageStates.Idle);
                         _state = States.Idle;
                         waitForLogin = false;
                     });
@@ -121,6 +125,7 @@ namespace PlayFabPowerTools.Packages
                     break;
             }
 
+            //TODO: Paul Help?
             do
             {
                 //Block util login call is done. 

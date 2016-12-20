@@ -450,7 +450,7 @@ namespace PlayFabPowerTools.Services
                     });
         }
 
-        public static void DownloadFile(string titleId, string path, ContentInfo content, Action<bool, string> callback)
+        public static void DownloadFile(string titleId, string path, ContentInfo content, Action<bool, string, ContentInfo> callback)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -468,30 +468,33 @@ namespace PlayFabPowerTools.Services
                 if (result.Result.Error != null)
                 {
                     Console.WriteLine(PlayFabUtil.GetErrorReport(result.Result.Error));
-                    callback(false, null);
+                    callback(false, null, null);
                     return;
                 }
 
                 if (result.IsCompleted)
                 {
-                    var filePath = string.Format("{0}/{1}", path, content.Key);
+                    var folderPathArray = content.Key.Split('/');
+                    var fileName = folderPathArray.ToList().Last();
+
+                    var filePath = string.Format("{0}\\{1}", path, fileName);
                     PlayFabExtensions.DownloadFile(result.Result.Result.URL, filePath, (success) =>
                     {
                         PlayFabSettings.TitleId = currentPlayFabTitleId;
                         PlayFabSettings.DeveloperSecretKey = currentDevKey;
                         if (success)
                         {
-                            callback(true, filePath);
+                            callback(true, filePath, content);
                             return;
                         }
-                        callback(false, null);
+                        callback(false, null, null);
                     });
                 }
             });
         }
 
 
-        public static void UploadFile(string titleId, string path, Action<bool> callback)
+        public static void UploadFile(string titleId, CdnFileDataMigration.UploadFile fileInfo, Action<bool> callback)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -500,17 +503,17 @@ namespace PlayFabPowerTools.Services
             PlayFabSettings.TitleId = titleId;
             PlayFabSettings.DeveloperSecretKey = title.SecretKey;
 
-            var key = path.Split('/').ToList()[path.Split('/').ToList().Count-1];
+            var key = fileInfo.FilePath.Split('/').ToList()[fileInfo.FilePath.Split('/').ToList().Count-1];
             var type = MimeMapping.GetMimeMapping(key);
             PlayFabAdminAPI.GetContentUploadUrlAsync(new GetContentUploadUrlRequest()
             {
-                Key = key,
+                Key = fileInfo.Data.Key,
                 ContentType = type
             }).ContinueWith((result) =>
             {
                 PlayFabSettings.TitleId = currentPlayFabTitleId;
                 PlayFabSettings.DeveloperSecretKey = currentDevKey;
-                PlayFabExtensions.UploadFile(result.Result.Result.URL, path, callback);
+                PlayFabExtensions.UploadFile(result.Result.Result.URL, fileInfo.FilePath, callback);
             });
         }
 
@@ -563,7 +566,7 @@ namespace PlayFabPowerTools.Services
             foreach (var studio in Studios)
             {
                 var title = studio.Titles.ToList().Find(t => t.Id == titleId);
-                if (titleId != null)
+                if (title != null)
                 {
                     return title;
                 }

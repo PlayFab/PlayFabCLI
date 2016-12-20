@@ -46,9 +46,6 @@ namespace PlayFabPowerTools
             //Load Settings File
             PlayFabService.Load();
             
-            //Create main loop 
-            var _mainLoopPackage = new MainLoopPackage();
-
             //Out put to screen some fancy playfab jazz
             Console.WriteLine("");
             Console.ForegroundColor = ConsoleColor.Green;
@@ -79,12 +76,15 @@ namespace PlayFabPowerTools
                 .SelectMany(s => s.GetTypes())
                 .Where(p => type.IsAssignableFrom(p) && p.Name != "iStatePackage");
 
-            //foreach package we need to register with MainLoop
+            //foreach package we need to register with Package Manager
             foreach (var t in types)
             {
                 var packageType = (iStatePackage)Activator.CreateInstance(t);
                 packageType.RegisterMainPackageStates(packageType);
             }
+
+            //get the correct package for the state we are in
+            _currentPackage = PackageManagerService.GetPackage();
 
             //This is the main program loop.
             do
@@ -116,14 +116,28 @@ namespace PlayFabPowerTools
 
                 //Set read line to true, not it will only be false if we came from a CLI.
                 _readLine = true;
-                //Set the state for the package based on what was entered.
-                _mainLoopPackage.SetState(_line);
-                //get the correct package for the state we are in
-                _currentPackage = _mainLoopPackage.GetPackage();
-                //process the package state
-                _isTypedTextHidden = _currentPackage.SetState(_line);
-                //do package loop, which contains logic to do stuff.
-                var loopReturn = _currentPackage.Loop();
+                var loopReturn = false;
+                if (PackageManagerService.IsIdle())
+                {
+                    //If we are idle then we want to check for commands.
+                    PackageManagerService.SetState(_line);
+                    _currentPackage = PackageManagerService.GetPackage();
+                    _isTypedTextHidden = _currentPackage.SetState(_line);
+                    loopReturn = _currentPackage.Loop();
+                }
+                else
+                {
+                    //If we are not idle, then we want to process the _line for arguments.
+
+                    //get the correct package for the state we are in
+                    _currentPackage = PackageManagerService.GetPackage();
+
+                    //process the package state
+                    _isTypedTextHidden = _currentPackage.SetState(_line);
+
+                    //do package loop, which contains logic to do stuff.
+                    loopReturn = _currentPackage.Loop();
+                }
 
                 //if this is a CLI then we just want to exit.
                 if (!_isCLI)
@@ -143,6 +157,7 @@ namespace PlayFabPowerTools
                     _line = null;
                 }
             } while (_line != null);
+
             //Always save before we completely exit.
             PlayFabService.Save();
         }

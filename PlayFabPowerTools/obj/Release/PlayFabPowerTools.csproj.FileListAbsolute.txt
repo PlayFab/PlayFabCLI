@@ -14,3 +14,11 @@ C:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\bin\Release\PlayFabPowe
 C:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\bin\Release\Newtonsoft.Json.dll
 C:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\bin\Release\PlayFabAllSDK.dll
 C:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\obj\Release\PlayFabPowerTools.csprojResolveAssemblyReference.cache
+E:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\bin\Release\PlayFabPowerTools.exe.config
+E:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\obj\Release\PlayFabPowerTools.exe
+E:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\obj\Release\PlayFabPowerTools.pdb
+E:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\bin\Release\PlayFabPowerTools.exe
+E:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\bin\Release\PlayFabPowerTools.pdb
+E:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\bin\Release\Newtonsoft.Json.dll
+E:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\bin\Release\PlayFabAllSDK.dll
+E:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\obj\Release\PlayFabPowerTools.csprojResolveAssemblyReference.cache

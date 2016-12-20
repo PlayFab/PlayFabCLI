@@ -57,6 +57,7 @@
     <Compile Include="Packages\PlayFabMigrateTitlePackage.cs" />
     <Compile Include="Packages\SetupStoresPackage.cs" />
     <Compile Include="Services\HelpService.cs" />
+    <Compile Include="Services\PackageManagerService.cs" />
     <Compile Include="Utils\PlayFabEditorModels.cs" />
     <Compile Include="Utils\PlayFabExtensions.cs" />
     <Compile Include="Program.cs" />
