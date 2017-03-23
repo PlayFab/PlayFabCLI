@@ -171,6 +171,64 @@ namespace PlayFabPowerTools.Services
                 });
         }
 
+        public static void GetTitleInternalData(string titleID, Action<bool, GetTitleDataResult> callback)
+        {
+            var currentPlayFabTitleId = PlayFabSettings.TitleId;
+            var currentDevKey = PlayFabSettings.DeveloperSecretKey;
+
+            var title = FindTitle(titleID);
+
+            PlayFabSettings.TitleId = titleID;
+            PlayFabSettings.DeveloperSecretKey = title.SecretKey;
+            var task = PlayFabServerAPI.GetTitleInternalDataAsync(new GetTitleDataRequest()).ContinueWith(
+                (result) =>
+                {
+                    PlayFabSettings.TitleId = currentPlayFabTitleId;
+                    PlayFabSettings.DeveloperSecretKey = currentDevKey;
+                    if (result.Result.Error != null)
+                    {
+                        Console.WriteLine(PlayFabUtil.GetErrorReport(result.Result.Error));
+                        callback(false, null);
+                        return;
+                    }
+                    if (result.IsCompleted)
+                    {
+                        callback(true, result.Result.Result);
+                    }
+                });
+        }
+
+        public static void UpdateTitleInternalData(string titleId, KeyValuePair<string, string> key, Action<bool> callback)
+        {
+            var currentPlayFabTitleId = PlayFabSettings.TitleId;
+            var currentDevKey = PlayFabSettings.DeveloperSecretKey;
+
+            var title = FindTitle(titleId);
+            PlayFabSettings.TitleId = titleId;
+            PlayFabSettings.DeveloperSecretKey = title.SecretKey;
+
+            var task = PlayFabServerAPI.SetTitleInternalDataAsync(new SetTitleDataRequest()
+            {
+                Key = key.Key,
+                Value = key.Value
+            }).ContinueWith(
+                (result) =>
+                {
+                    PlayFabSettings.TitleId = currentPlayFabTitleId;
+                    PlayFabSettings.DeveloperSecretKey = currentDevKey;
+                    if (result.Result.Error != null)
+                    {
+                        Console.WriteLine(PlayFabUtil.GetErrorReport(result.Result.Error));
+                        callback(false);
+                        return;
+                    }
+                    if (result.IsCompleted)
+                    {
+                        callback(true);
+                    }
+                });
+        }
+
         public static void GetCurrencyData(string titleId, Action<bool, List<VirtualCurrencyData>> callback)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
@@ -381,6 +439,68 @@ namespace PlayFabPowerTools.Services
                     });
         }
 
+        public static void GetDropTableData(string titleId, Action<bool, Dictionary<string, PlayFab.AdminModels.RandomResultTableListing>> callback)
+        {
+            var currentPlayFabTitleId = PlayFabSettings.TitleId;
+            var currentDevKey = PlayFabSettings.DeveloperSecretKey;
+
+            var title = FindTitle(titleId);
+            PlayFabSettings.TitleId = titleId;
+            PlayFabSettings.DeveloperSecretKey = title.SecretKey;
+
+            var task = PlayFabAdminAPI.GetRandomResultTablesAsync(new PlayFab.AdminModels.GetRandomResultTablesRequest())
+                .ContinueWith(
+                    (result) =>
+                    {
+                        PlayFabSettings.TitleId = currentPlayFabTitleId;
+                        PlayFabSettings.DeveloperSecretKey = currentDevKey;
+                        Task<PlayFabResult<PlayFab.AdminModels.GetRandomResultTablesResult>> taskC = result as Task<PlayFabResult<PlayFab.AdminModels.GetRandomResultTablesResult>>;
+                        if (taskC.Result.Error != null)
+                        {
+                            Console.WriteLine(PlayFabUtil.GetErrorReport(taskC.Result.Error));
+                            callback(false, null);
+                            return;
+                        }
+                        if (result.IsCompleted)
+                        {
+                            callback(true, taskC.Result.Result.Tables);
+                        }
+                    });
+
+        }
+
+        public static void UpdateDropTableData(string titleId, List<RandomResultTable> dropTables, Action<bool> callback)
+        {
+            var currentPlayFabTitleId = PlayFabSettings.TitleId;
+            var currentDevKey = PlayFabSettings.DeveloperSecretKey;
+
+            var title = FindTitle(titleId);
+            PlayFabSettings.TitleId = titleId;
+            PlayFabSettings.DeveloperSecretKey = title.SecretKey;
+
+            var task = PlayFabAdminAPI.UpdateRandomResultTablesAsync(new PlayFab.AdminModels.UpdateRandomResultTablesRequest()
+            {
+                Tables = dropTables
+            }
+            )
+                .ContinueWith(
+                    (result) =>
+                    {
+                        PlayFabSettings.TitleId = currentPlayFabTitleId;
+                        PlayFabSettings.DeveloperSecretKey = currentDevKey;
+                        if (result.Result.Error != null)
+                        {
+                            Console.WriteLine(PlayFabUtil.GetErrorReport(result.Result.Error));
+                            callback(false);
+                            return;
+                        }
+                        if (result.IsCompleted)
+                        {
+                            callback(true);
+                        }
+                    });
+        }
+
         public static void GetStoreData(string titleId, string storeId,  Action<bool, string, string, StoreMarketingModel, List<PlayFab.AdminModels.StoreItem>> callback)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
@@ -533,7 +653,7 @@ namespace PlayFabPowerTools.Services
                         Settings = obj;
                     }
                 }
-                catch (Exception e)
+                catch
                 {
                     Console.WriteLine("Could not load playfab settings file.");
                 }
@@ -554,7 +674,7 @@ namespace PlayFabPowerTools.Services
                 var settings = JsonConvert.SerializeObject(Settings);
                 System.IO.File.WriteAllText(path+file, settings);
             }
-            catch (Exception e)
+            catch
             {
                 Console.WriteLine("Could not save playfab settings file.");
             }
