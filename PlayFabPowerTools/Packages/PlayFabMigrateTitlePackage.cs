@@ -18,6 +18,7 @@ namespace PlayFabPowerTools.Packages
         {
             Idle,
             TitleData,
+            TitleInternalData,
             CloudScript,
             Files,
             Currency,
@@ -39,10 +40,12 @@ namespace PlayFabPowerTools.Packages
 
         private CancellationTokenSource _cts = new CancellationTokenSource();
         private TitleDataMigration _titleData;
+        private TitleDataMigration _titleInternalData;
         private CurrencyDataMigration _currencyData;
         private CloudScriptDataMigration _cloudScriptData;
         private CdnFileDataMigration _cdnData;
         private CatalogDataMigration _catalogData;
+        private DropTableDataMigration _droptableData;
         private StoreDataMigration _storeData;
         
 
@@ -73,10 +76,12 @@ namespace PlayFabPowerTools.Packages
 
             //SetUp Data Objects
             _titleData = new TitleDataMigration();
+            _titleInternalData = new TitleDataMigration();
             _currencyData = new CurrencyDataMigration();
             _cloudScriptData = new CloudScriptDataMigration();
             _cdnData = new CdnFileDataMigration();
             _catalogData = new CatalogDataMigration();
+            _droptableData = new DropTableDataMigration();
             _storeData = new StoreDataMigration
             {
                 StoreList = PlayFabService.Settings.StoreList
@@ -123,6 +128,9 @@ namespace PlayFabPowerTools.Packages
                     _state = States.TitleData;
                     break;
                 case States.TitleData:
+                    _state = States.TitleInternalData;
+                    break;
+                case States.TitleInternalData:
                     _state = States.Currency;
                     break;
                 case States.Currency:
@@ -136,6 +144,9 @@ namespace PlayFabPowerTools.Packages
                     break;
                 case States.Catalogs:
                     _state = States.Stores;
+                    break;
+                case States.Stores:
+                    _state = States.DropTables;
                     break;
                 default:
                     _state = States.Complete;
@@ -189,6 +200,49 @@ namespace PlayFabPowerTools.Packages
                     }
                     #endregion
                     break;
+                case States.TitleInternalData:
+                    #region Update Title Internal Data Keys
+                    if (!_titleInternalData.FromProcessed)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine("Getting Title Interal Data from: " + _commandArgs.FromTitleId);
+                        PlayFabService.GetTitleInternalData(_commandArgs.FromTitleId, (success, result) =>
+                        {
+                            if (!success || result.Data.Count == 0)
+                            {
+                                Console.WriteLine("No Title Internal Data found, skipping");
+                                SetNextState();
+                            }
+                            else
+                            {
+                                Console.WriteLine("Title Internal Data Keys Found: " + result.Data.Count.ToString());
+                                _titleInternalData.Data = result.Data;
+                                _titleInternalData.FromProcessed = true;
+                            }
+                        });
+                    }
+
+                    if (!_titleInternalData.ToProcessed && _titleInternalData.FromProcessed)
+                    {
+                        if (_titleInternalData.Data.Count == 0)
+                        {
+                            _titleInternalData.ToProcessed = true;
+                            SetNextState();
+                            break;
+                        }
+                        var kvp = _titleInternalData.Pop();
+                        Console.WriteLine("Saving Title Interal Data from: " + _commandArgs.FromTitleId + " To: " + _commandArgs.ToTitleId);
+                        PlayFabService.UpdateTitleInternalData(_commandArgs.ToTitleId, kvp, (success) =>
+                        {
+                            if (!success)
+                            {
+                                Console.WriteLine("Save Title Interal Data Failed, skipping");
+                                SetNextState();
+                            }
+                        });
+                    }
+                    #endregion
+                    break;
                 case States.Currency:
                     #region Update Currency Types
                     if (!_currencyData.FromProcessed)
@@ -220,12 +274,11 @@ namespace PlayFabPowerTools.Packages
                         PlayFabService.UpdateCurrencyData(_commandArgs.ToTitleId, _currencyData.Data,
                             (success) =>
                             {
-                                //TODO: Add this back in once the API is fixed.
-                                //if (!success)
-                                //{
-                                //    Console.WriteLine("Save Title Data Failed.");
-                                //    _cts.Cancel();
-                                //}
+                                if (!success)
+                                {
+                                    Console.WriteLine("Save Title Data Failed.");
+                                    _cts.Cancel();
+                                }
                                 _currencyData.Data = null;
                             });
                     }
@@ -258,6 +311,8 @@ namespace PlayFabPowerTools.Packages
                             SetNextState();
                             break;
                         }
+
+                        Console.WriteLine("Updating CloudScript on Title: " + _commandArgs.ToTitleId);
 
                         PlayFabService.UpdateCloudScript(_commandArgs.ToTitleId, _cloudScriptData.Data,
                             (success) =>
@@ -455,6 +510,128 @@ namespace PlayFabPowerTools.Packages
                     }
                     #endregion
                     break;
+                case States.DropTables:
+                    #region Update Drop Tables
+                    if (_droptableData.FromProcessed && _droptableData.ToProcessed)
+                    {
+                        SetNextState();
+                        break;
+                    }
+
+                    if (!_droptableData.FromProcessed)
+                    {
+                        //TODO: Make this support multiple catalogs
+                        Console.WriteLine("Getting Drop Table Data for Main Catalog only");
+                        PlayFabService.GetDropTableData(_commandArgs.FromTitleId,
+                            (success, catalog) =>
+                            {
+                                if (!success)
+                                {
+                                    Console.WriteLine("Error Fetching CloudScript Data, skipping");
+                                    SetNextState();
+                                }
+                                _droptableData.Data = new Queue<List<RandomResultTable>>();
+
+                                Dictionary<string, RandomResultTableListing> listing = new Dictionary<string, RandomResultTableListing>(catalog);
+
+                                List<RandomResultTable> thisList = new List<RandomResultTable>();
+
+                                foreach (var v in listing)
+                                {
+                                    bool referencesDropTable = false;
+
+                                    foreach (var item in v.Value.Nodes)
+                                    {
+                                        if (item.ResultItemType == ResultTableNodeType.TableId)
+                                        {
+                                            referencesDropTable = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (!referencesDropTable)
+                                    {
+                                        RandomResultTable table = new RandomResultTable();
+                                        table.TableId = v.Value.TableId;
+                                        table.Nodes = v.Value.Nodes;
+
+                                        thisList.Add(table);
+                                    }
+                                }
+
+                                if (thisList.Count != 0)
+                                {
+                                    while (true)
+                                    {
+                                        _droptableData.Data.Enqueue(thisList);
+
+                                        foreach (var item in thisList) //remove from pending list
+                                        {
+                                            listing.Remove(item.TableId);
+                                        }
+
+                                        //Add any references
+                                        List<RandomResultTable> nextList = new List<RandomResultTable>();
+
+                                        foreach (var item in listing)
+                                        {
+                                            bool referencesCurrent = false;
+
+                                            foreach (var node in item.Value.Nodes)
+                                            {
+                                                if (node.ResultItemType == ResultTableNodeType.TableId && thisList.Any(x => x.TableId == node.ResultItem ))
+                                                {
+                                                    referencesCurrent = true;
+                                                    break;
+                                                }
+                                            }
+
+                                            if (referencesCurrent)
+                                            {
+                                                RandomResultTable table = new RandomResultTable();
+                                                table.TableId = item.Value.TableId;
+                                                table.Nodes = item.Value.Nodes;
+
+                                                nextList.Add(table);
+                                            }
+                                        }
+
+                                        if (nextList.Count == 0)
+                                        {
+                                            break;
+                                        }
+
+                                        thisList = nextList;
+                                    }
+                                }
+
+                                _droptableData.FromProcessed = true;
+                            });
+                    }
+
+                    if (!_droptableData.ToProcessed && _droptableData.FromProcessed)
+                    {
+                        Console.WriteLine("Updating Drop Tables on Title: " + _commandArgs.ToTitleId);
+                        PlayFabService.UpdateDropTableData(_commandArgs.ToTitleId, _droptableData.Data.Dequeue(),
+                            (success) =>
+                            {
+                                if (!success)
+                                {
+                                    Console.WriteLine("Save Catalog Failed, skipping.");
+                                    SetNextState();
+                                }
+                                //_catalogData.Data = null;
+                                //_catalogData.CatalogVersion = null;
+
+                                if (_droptableData.Data.Count == 0)
+                                {
+                                    _droptableData.Data = null;
+                                    _droptableData.ToProcessed = true;
+                                }
+                            });
+                    }
+                    #endregion
+                    break;
                 case States.Complete:
                     Console.WriteLine("Migration Complete.");
                     Console.ForegroundColor = ConsoleColor.White;
@@ -495,6 +672,11 @@ namespace PlayFabPowerTools.Packages
     {
         public List<CatalogItem> Data;
         public string CatalogVersion;
+    }
+
+    public class DropTableDataMigration : DataMigration
+    {
+        public Queue<List<PlayFab.AdminModels.RandomResultTable>> Data;
     }
 
     public class CdnFileDataMigration : DataMigration
