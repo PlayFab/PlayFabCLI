@@ -3,17 +3,17 @@ PlayFab CLI  is a command line interface that can be used to perform various adm
 
 ***NOTE:*** This tool has been completely re-factored and is no longer the "Script" tool that it was.  It is much more useful now and new features can be added to it more easily.
 
-##Supported Platforms
+## Supported Platforms
 **Currently for Windows Only**
 
-##Installation
+## Installation
 Installation of PlayFab CLI is simple.  
 
 1. Extract the folder to any directory of your choosing.
 2. Modify your environment path to point to that folder.
 	1. **start** --> type: **environment** --> **Click Edit the system environment variables**  and modify your "path" to include your PFPT CLI directory.
 
-##Modes
+## Modes
 There are currently two modes for the PF CLI,  there is a CLI mode and a Console mode.
 
 1. Console Mode: To enter into console mode just open up "cmd" and type PlayFabPowerTools
@@ -27,7 +27,7 @@ There are currently two modes for the PF CLI,  there is a CLI mode and a Console
 in this example, you can login using your credentials and it will log you in and pull all the data related to your login.
 
 
-##Commands
+## Commands
 There are currently only a few commands that the tool can do right now.
 
 1. Login - This allows you to login with a username & password.  Login will download all Titles that you have access to, you only need to do this once or any time you add titles to your PlayFab Account.
