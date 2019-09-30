@@ -22,3 +22,13 @@ E:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\bin\Release\PlayFabPowe
 E:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\bin\Release\Newtonsoft.Json.dll
 E:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\bin\Release\PlayFabAllSDK.dll
 E:\_GitRoot\_PlayFab\PlayFabPowerTools\PlayFabPowerTools\obj\Release\PlayFabPowerTools.csprojResolveAssemblyReference.cache
+C:\akhil\git\PlayFabCLI\PlayFabPowerTools\bin\Release\PlayFabPowerTools.exe.config
+C:\akhil\git\PlayFabCLI\PlayFabPowerTools\bin\Release\PlayFabPowerTools.exe
+C:\akhil\git\PlayFabCLI\PlayFabPowerTools\bin\Release\PlayFabPowerTools.pdb
+C:\akhil\git\PlayFabCLI\PlayFabPowerTools\bin\Release\Newtonsoft.Json.dll
+C:\akhil\git\PlayFabCLI\PlayFabPowerTools\bin\Release\PlayFabAllSDK.dll
+C:\akhil\git\PlayFabCLI\PlayFabPowerTools\obj\Release\PlayFabPowerTools.csprojAssemblyReference.cache
+C:\akhil\git\PlayFabCLI\PlayFabPowerTools\obj\Release\PlayFabPowerTools.csproj.CoreCompileInputs.cache
+C:\akhil\git\PlayFabCLI\PlayFabPowerTools\obj\Release\PlayFabPowerTools.csproj.CopyComplete
+C:\akhil\git\PlayFabCLI\PlayFabPowerTools\obj\Release\PlayFabPowerTools.exe
+C:\akhil\git\PlayFabCLI\PlayFabPowerTools\obj\Release\PlayFabPowerTools.pdb
