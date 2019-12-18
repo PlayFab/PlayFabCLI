@@ -13,13 +13,15 @@ namespace PlayFabPowerTools.Packages
     {
         private string _username;
         private string _password;
+        private string _2faToken;
         private static string _DeveloperClientToken;
         
         private enum States
         {
             Idle,
-            WiatForUsername,
+            WaitForUsername,
             WaitForPassword,
+            WaitFor2FAToken,
             Login,
             GetStudios
         }
@@ -58,8 +60,9 @@ namespace PlayFabPowerTools.Packages
 
             if (_state == States.Idle)
             {
-                _state = States.WiatForUsername;
-            }else if (_state == States.WiatForUsername)
+                _state = States.WaitForUsername;
+            }
+            else if (_state == States.WaitForUsername)
             {
                 _username = line;
                 _state = States.WaitForPassword;
@@ -68,8 +71,14 @@ namespace PlayFabPowerTools.Packages
             else if (_state == States.WaitForPassword)
             {
                 _password = line;
+                _state = States.WaitFor2FAToken;
+            }
+            else if(_state == States.WaitFor2FAToken)
+            {
+                _2faToken = line;
                 _state = States.Login;
-            }else if (_state == States.Login)
+            }
+            else if (_state == States.Login)
             {
                 _state = States.GetStudios;
             }
@@ -81,20 +90,29 @@ namespace PlayFabPowerTools.Packages
             var waitForLogin = false;
             switch (_state)
             {
-                case States.WiatForUsername:
+                case States.WaitForUsername:
                     Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine("");
                     Console.WriteLine("Username:");
                     
                     break;
+
                 case States.WaitForPassword:
                     Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine("");
                     Console.WriteLine("Password:");
+
+                    break;
+
+                case States.WaitFor2FAToken:
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("");
+                    Console.WriteLine("2FA Token:");
+
                     break;
                 case States.Login:
                     waitForLogin = true;
-                    PlayFabService.Login(_username,_password, (success, devKey) =>
+                    PlayFabService.Login(_username,_password,_2faToken, (success, devKey) =>
                     {
                         if (!success)
                         {
