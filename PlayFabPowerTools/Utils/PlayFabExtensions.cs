@@ -13,7 +13,7 @@ namespace PlayFab
 {
     public class PlayFabExtensions
     {
-        public static void UploadFile(string uri, string filePath, Action<bool> callback )
+        async public static Task<bool> UploadFile(string uri, string filePath)
         {
             try
             {
@@ -21,22 +21,18 @@ namespace PlayFab
                 {
                     Console.WriteLine("Uploading file to: " + uri);
                     Console.WriteLine("");
-                    client.UploadFile(uri, "PUT", filePath);
-                    do
-                    {
-                        //Block while client file is uploading.
-                    } while (client.IsBusy);
-                    callback(true);
+                    await client.UploadFileTaskAsync(uri, "PUT", filePath);
+                    return true;
                 }
             }
             catch (Exception e)
             {
-               Console.WriteLine(e.Message);
-               callback(false);
+               Console.WriteLine("File Download Error:" + e.Message);
+                return false;
             }
         }
 
-        public static void DownloadFile(string uri, string filePath, Action<bool> callback)
+        async public static Task<bool> DownloadFile(string uri, string filePath)
         {
             try
             {
@@ -44,21 +40,16 @@ namespace PlayFab
                 {
                     Console.WriteLine("Downloading file: " + uri);
                     Console.WriteLine("");
-                    client.DownloadFile(uri, filePath);
-                    do
-                    {
-                        //Block while downloading file.
-                    } while (client.IsBusy);
-                    callback(true);
+                    await client.DownloadFileTaskAsync(new Uri(uri), filePath);
+                    return true;
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine("Download Error:" + e.Message);
-                callback(false);
+                Console.WriteLine("File Download Error:" + e.Message);
+                return false;
             }
         }
-
 
         public static async Task<PlayFabResult<LoginResult>> Login(LoginRequest request)
         {

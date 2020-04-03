@@ -15,12 +15,15 @@ using GetTitleDataRequest = PlayFab.ServerModels.GetTitleDataRequest;
 using GetTitleDataResult = PlayFab.ServerModels.GetTitleDataResult;
 using SetTitleDataRequest = PlayFab.ServerModels.SetTitleDataRequest;
 using SetTitleDataResult = PlayFab.ServerModels.SetTitleDataResult;
+using PlayFabPowerTools.Utils;
 
 namespace PlayFabPowerTools.Services
 {
     public class PlayFabService
     {
         public static PlayFabServiceSettings Settings;
+
+        private static string ErrorPrefix = "PlayFabErrorMessage: ";
 
         public static void Init()
         {
@@ -53,7 +56,7 @@ namespace PlayFabPowerTools.Services
 
         public static string DeveloperPlayFabId
         {
-            get { return Settings.DeveloperPlayFabId; }   
+            get { return Settings.DeveloperPlayFabId; }
             set { Settings.DeveloperPlayFabId = value; }
         }
 
@@ -63,7 +66,7 @@ namespace PlayFabPowerTools.Services
             set { Settings.DeveloperClientToken = value; }
         }
 
-        public static void Login(string user, string pass, Action<bool,string> callback)
+        public static void Login(string user, string pass, Action<bool, string> callback)
         {
             var loginTask = PlayFabExtensions.Login(new LoginRequest()
             {
@@ -90,7 +93,7 @@ namespace PlayFabPowerTools.Services
             });
         }
 
-        public static void GetStudios(string token,Action<bool> callback)
+        public static void GetStudios(string token, Action<bool> callback)
         {
             var getStudioTask = PlayFabExtensions.GetStudios(new GetStudiosRequest()
             {
@@ -113,7 +116,7 @@ namespace PlayFabPowerTools.Services
                 });
         }
 
-        public static void GetTitleData(string titleID, Action<bool,GetTitleDataResult> callback)
+        async public static Task<GetTitleDataResult> GetTitleData(string titleID)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -122,25 +125,18 @@ namespace PlayFabPowerTools.Services
 
             PlayFabSettings.TitleId = titleID;
             PlayFabSettings.DeveloperSecretKey = title.SecretKey;
-            var task = PlayFabServerAPI.GetTitleDataAsync(new GetTitleDataRequest()).ContinueWith(
-                (result) =>
-                {
-                    PlayFabSettings.TitleId = currentPlayFabTitleId;
-                    PlayFabSettings.DeveloperSecretKey = currentDevKey;
-                    if (result.Result.Error != null)
-                    {
-                        Console.WriteLine(PlayFabUtil.GetErrorReport(result.Result.Error));
-                        callback(false, null);
-                        return;
-                    }
-                    if (result.IsCompleted)
-                    {
-                        callback(true, result.Result.Result);
-                    }
-                });
+            var result = await PlayFabServerAPI.GetTitleDataAsync(new GetTitleDataRequest());
+            PlayFabSettings.TitleId = currentPlayFabTitleId;
+
+            PlayFabSettings.DeveloperSecretKey = currentDevKey;
+            if (result.Error != null) {
+                Console.WriteLine(PlayFabUtil.GetErrorReport(result.Error));
+                return null;
+            }
+            return result.Result;
         }
 
-        public static void UpdateTitleData(string titleId, KeyValuePair<string,string> key, Action<bool> callback)
+        async public static Task<bool> UpdateTitleData(string titleId, KeyValuePair<string, string> key)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -149,29 +145,20 @@ namespace PlayFabPowerTools.Services
             PlayFabSettings.TitleId = titleId;
             PlayFabSettings.DeveloperSecretKey = title.SecretKey;
 
-            var task = PlayFabServerAPI.SetTitleDataAsync(new SetTitleDataRequest()
-            {
+            var result = await PlayFabServerAPI.SetTitleDataAsync(new SetTitleDataRequest() {
                 Key = key.Key,
                 Value = key.Value
-            }).ContinueWith(
-                (result) =>
-                {
-                    PlayFabSettings.TitleId = currentPlayFabTitleId;
-                    PlayFabSettings.DeveloperSecretKey = currentDevKey;
-                    if (result.Result.Error != null)
-                    {
-                        Console.WriteLine(PlayFabUtil.GetErrorReport(result.Result.Error));
-                        callback(false);
-                        return;
-                    }
-                    if (result.IsCompleted)
-                    {
-                        callback(true);
-                    }
-                });
+            });
+            PlayFabSettings.TitleId = currentPlayFabTitleId;
+            PlayFabSettings.DeveloperSecretKey = currentDevKey;
+            if (result.Error != null) {
+                Console.WriteLine(ErrorPrefix + PlayFabUtil.GetErrorReport(result.Error));
+                return false;
+            }
+            return true;
         }
 
-        public static void GetTitleInternalData(string titleID, Action<bool, GetTitleDataResult> callback)
+        async public static Task<GetTitleDataResult> GetTitleInternalData(string titleID)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -180,25 +167,18 @@ namespace PlayFabPowerTools.Services
 
             PlayFabSettings.TitleId = titleID;
             PlayFabSettings.DeveloperSecretKey = title.SecretKey;
-            var task = PlayFabServerAPI.GetTitleInternalDataAsync(new GetTitleDataRequest()).ContinueWith(
-                (result) =>
-                {
-                    PlayFabSettings.TitleId = currentPlayFabTitleId;
-                    PlayFabSettings.DeveloperSecretKey = currentDevKey;
-                    if (result.Result.Error != null)
-                    {
-                        Console.WriteLine(PlayFabUtil.GetErrorReport(result.Result.Error));
-                        callback(false, null);
-                        return;
-                    }
-                    if (result.IsCompleted)
-                    {
-                        callback(true, result.Result.Result);
-                    }
-                });
+            var result = await PlayFabServerAPI.GetTitleInternalDataAsync(new GetTitleDataRequest());
+            PlayFabSettings.TitleId = currentPlayFabTitleId;
+            PlayFabSettings.DeveloperSecretKey = currentDevKey;
+            if (result.Error != null) {
+                Console.WriteLine(PlayFabUtil.GetErrorReport(result.Error));
+                return null;
+            }
+
+            return result.Result;
         }
 
-        public static void UpdateTitleInternalData(string titleId, KeyValuePair<string, string> key, Action<bool> callback)
+        async public static Task<bool> UpdateTitleInternalData(string titleId, KeyValuePair<string, string> key)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -207,29 +187,20 @@ namespace PlayFabPowerTools.Services
             PlayFabSettings.TitleId = titleId;
             PlayFabSettings.DeveloperSecretKey = title.SecretKey;
 
-            var task = PlayFabServerAPI.SetTitleInternalDataAsync(new SetTitleDataRequest()
-            {
+            var result = await PlayFabServerAPI.SetTitleInternalDataAsync(new SetTitleDataRequest() {
                 Key = key.Key,
                 Value = key.Value
-            }).ContinueWith(
-                (result) =>
-                {
-                    PlayFabSettings.TitleId = currentPlayFabTitleId;
-                    PlayFabSettings.DeveloperSecretKey = currentDevKey;
-                    if (result.Result.Error != null)
-                    {
-                        Console.WriteLine(PlayFabUtil.GetErrorReport(result.Result.Error));
-                        callback(false);
-                        return;
-                    }
-                    if (result.IsCompleted)
-                    {
-                        callback(true);
-                    }
-                });
+            });
+            PlayFabSettings.TitleId = currentPlayFabTitleId;
+            PlayFabSettings.DeveloperSecretKey = currentDevKey;
+            if (result.Error != null) {
+                Console.WriteLine(PlayFabUtil.GetErrorReport(result.Error));
+                return false;
+            }
+            return true;
         }
 
-        public static void GetCurrencyData(string titleId, Action<bool, List<VirtualCurrencyData>> callback)
+        async public static Task<ListVirtualCurrencyTypesResult> GetCurrencyData(string titleId)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -238,27 +209,38 @@ namespace PlayFabPowerTools.Services
             PlayFabSettings.TitleId = titleId;
             PlayFabSettings.DeveloperSecretKey = title.SecretKey;
 
-            var task = PlayFabAdminAPI.ListVirtualCurrencyTypesAsync(new ListVirtualCurrencyTypesRequest())
-                .ContinueWith(
-                    (result) =>
-                    {
-                        PlayFabSettings.TitleId = currentPlayFabTitleId;
-                        PlayFabSettings.DeveloperSecretKey = currentDevKey;
-                        if (result.Result.Error != null)
-                        {
-                            Console.WriteLine(PlayFabUtil.GetErrorReport(result.Result.Error));
-                            callback(false, null);
-                            return;
-                        }
-                        if (result.IsCompleted)
-                        {
-                            callback(true, result.Result.Result.VirtualCurrencies);
-                        }
-                    });
+            // I want to return a task that holds the 
+            var result = await PlayFabAdminAPI.ListVirtualCurrencyTypesAsync(new ListVirtualCurrencyTypesRequest());
+            //.ContinueWith(
+            //    (result) => {
+            //        PlayFabSettings.TitleId = currentPlayFabTitleId;
+            //        PlayFabSettings.DeveloperSecretKey = currentDevKey;
+            //        if (result.Result.Error != null)
+            //        {
+            //            Console.WriteLine(PlayFabUtil.GetErrorReport(result.Result.Error));
+            //            callback(false, null);
+            //            return;
+            //        }
+            //        if (result.IsCompleted)
+            //        {
+            //            callback(true, result.Result.Result.VirtualCurrencies);
+            //        }
+            //    });
 
+            PlayFabSettings.TitleId = currentPlayFabTitleId;
+            PlayFabSettings.DeveloperSecretKey = currentDevKey;
+            if (result.Error != null)
+            {
+                Console.WriteLine(PlayFabUtil.GetErrorReport(result.Error));
+                return null;
+            }
+
+            Console.WriteLine("The data found in get currency " + result.Result.VirtualCurrencies.Count);
+
+            return result.Result;
         }
 
-        public static void UpdateCurrencyData(string titleId,List<VirtualCurrencyData> currencyData, Action<bool> callback)
+        async public static Task<BlankResult> UpdateCurrencyData(string titleId, List<VirtualCurrencyData> currencyData)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -266,29 +248,43 @@ namespace PlayFabPowerTools.Services
             var title = FindTitle(titleId);
             PlayFabSettings.TitleId = titleId;
             PlayFabSettings.DeveloperSecretKey = title.SecretKey;
-            var task = PlayFabAdminAPI.AddVirtualCurrencyTypesAsync(new AddVirtualCurrencyTypesRequest()
+            var result = await PlayFabAdminAPI.AddVirtualCurrencyTypesAsync(new AddVirtualCurrencyTypesRequest()
             {
                 VirtualCurrencies = currencyData
-            })
-                .ContinueWith(
-                    (result) =>
-                    {
-                        PlayFabSettings.TitleId = currentPlayFabTitleId;
-                        PlayFabSettings.DeveloperSecretKey = currentDevKey;
-                        if (result.Result.Error != null)
-                        {
-                            //Console.WriteLine(PlayFabUtil.GetErrorReport(result.Result.Error));
-                            callback(false);
-                            return;
-                        }
-                        if (result.IsCompleted)
-                        {
-                            callback(true);
-                        }
-                    });
+            });
+            PlayFabSettings.TitleId = currentPlayFabTitleId;
+            PlayFabSettings.DeveloperSecretKey = currentDevKey;
+            if (result.Error != null)
+            {
+                Console.WriteLine(PlayFabUtil.GetErrorReport(result.Error));
+                return null;
+            }
+            return result.Result;
         }
 
-        public static void GetCloudScript(string titleId, Action<bool, List<CloudScriptFile>> callback)
+        async public static Task<BlankResult> DeleteCurrencyData(string titleId, List<VirtualCurrencyData> currencyData)
+        {
+            var currentPlayFabTitleId = PlayFabSettings.TitleId;
+            var currentDevKey = PlayFabSettings.DeveloperSecretKey;
+
+            var title = FindTitle(titleId);
+            PlayFabSettings.TitleId = titleId;
+            PlayFabSettings.DeveloperSecretKey = title.SecretKey;
+            var result = await PlayFabAdminAPI.RemoveVirtualCurrencyTypesAsync(new RemoveVirtualCurrencyTypesRequest()
+            {
+                VirtualCurrencies = currencyData
+            });
+            PlayFabSettings.TitleId = currentPlayFabTitleId;
+            PlayFabSettings.DeveloperSecretKey = currentDevKey;
+            if (result.Error != null)
+            {
+                Console.WriteLine(PlayFabUtil.GetErrorReport(result.Error));
+                return null;
+            }
+            return result.Result;
+        }
+
+        async public static Task<List<CloudScriptFile>> GetCloudScript(string titleId)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -297,26 +293,18 @@ namespace PlayFabPowerTools.Services
             PlayFabSettings.TitleId = titleId;
             PlayFabSettings.DeveloperSecretKey = title.SecretKey;
 
-            var task = PlayFabAdminAPI.GetCloudScriptRevisionAsync(new GetCloudScriptRevisionRequest())
-                .ContinueWith(
-                    (result) =>
-                    {
-                        PlayFabSettings.TitleId = currentPlayFabTitleId;
-                        PlayFabSettings.DeveloperSecretKey = currentDevKey;
-                        if (result.Result.Error != null)
-                        {
-                            Console.WriteLine(PlayFabUtil.GetErrorReport(result.Result.Error));
-                            callback(false, null);
-                            return;
-                        }
-                        if (result.IsCompleted)
-                        {
-                            callback(true, result.Result.Result.Files);
-                        }
-                    });
+            var result = await PlayFabAdminAPI.GetCloudScriptRevisionAsync(new GetCloudScriptRevisionRequest());
+            PlayFabSettings.TitleId = currentPlayFabTitleId;
+            PlayFabSettings.DeveloperSecretKey = currentDevKey;
+            if (result.Error != null)
+            {
+                Console.WriteLine(PlayFabUtil.GetErrorReport(result.Error));
+                return null;
+            }
+            return result.Result.Files;
         }
 
-        public static void UpdateCloudScript(string titleId,List<CloudScriptFile> cloudScriptData, Action<bool> callback)
+        async public static Task<bool> UpdateCloudScript(string titleId, List<CloudScriptFile> cloudScriptData)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -324,31 +312,22 @@ namespace PlayFabPowerTools.Services
             var title = FindTitle(titleId);
             PlayFabSettings.TitleId = titleId;
             PlayFabSettings.DeveloperSecretKey = title.SecretKey;
-            var task = PlayFabAdminAPI.UpdateCloudScriptAsync(new UpdateCloudScriptRequest()
+            var result = await PlayFabAdminAPI.UpdateCloudScriptAsync(new UpdateCloudScriptRequest()
             {
                 Files = cloudScriptData,
                 Publish = true
-            })
-                .ContinueWith(
-                    (result) =>
-                    {
-                        PlayFabSettings.TitleId = currentPlayFabTitleId;
-                        PlayFabSettings.DeveloperSecretKey = currentDevKey;
-                        if (result.Result.Error != null)
-                        {
-                            
-                            //Console.WriteLine(PlayFabUtil.GetErrorReport(result.Result.Error));
-                            callback(false);
-                            return;
-                        }
-                        if (result.IsCompleted)
-                        {
-                            callback(true);
-                        }
-                    });
+            });
+            PlayFabSettings.TitleId = currentPlayFabTitleId;
+            PlayFabSettings.DeveloperSecretKey = currentDevKey;
+            if (result.Error != null)
+            {
+                Console.WriteLine(PlayFabUtil.GetErrorReport(result.Error));
+                return false;
+            }
+            return true;
         }
 
-        public static void GetContentList(string titleId, Action<bool, List<ContentInfo>> callback)
+        async public static Task<List<ContentInfo>> GetContentList(string titleId)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -357,27 +336,20 @@ namespace PlayFabPowerTools.Services
             PlayFabSettings.TitleId = titleId;
             PlayFabSettings.DeveloperSecretKey = title.SecretKey;
 
-            var task = PlayFabAdminAPI.GetContentListAsync(new GetContentListRequest())
-                .ContinueWith(
-                    (result) =>
-                    {
-                        PlayFabSettings.TitleId = currentPlayFabTitleId;
-                        PlayFabSettings.DeveloperSecretKey = currentDevKey;
-                        if (result.Result.Error != null)
-                        {
-                            Console.WriteLine(PlayFabUtil.GetErrorReport(result.Result.Error));
-                            callback(false, null);
-                            return;
-                        }
-                        if (result.IsCompleted)
-                        {
+            var result = await PlayFabAdminAPI.GetContentListAsync(new GetContentListRequest());
+            PlayFabSettings.TitleId = currentPlayFabTitleId;
+            PlayFabSettings.DeveloperSecretKey = currentDevKey;
+            if (result.Error != null)
+            {
+                Console.WriteLine(PlayFabUtil.GetErrorReport(result.Error));
+                return null;
+            }
 
-                            callback(true, result.Result.Result.Contents);
-                        }
-                    });
+            return result.Result.Contents;
         }
 
-        public static void GetCatalogData(string titleId, Action<bool, string, List<PlayFab.AdminModels.CatalogItem>> callback)
+        // Currently onle fetches the default catalog
+        async public static Task<List<PlayFab.AdminModels.CatalogItem>> GetCatalogData(string titleId)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -386,28 +358,20 @@ namespace PlayFabPowerTools.Services
             PlayFabSettings.TitleId = titleId;
             PlayFabSettings.DeveloperSecretKey = title.SecretKey;
 
-            var task = PlayFabAdminAPI.GetCatalogItemsAsync(new PlayFab.AdminModels.GetCatalogItemsRequest())
-                .ContinueWith(
-                    (result) =>
-                    {
-                        PlayFabSettings.TitleId = currentPlayFabTitleId;
-                        PlayFabSettings.DeveloperSecretKey = currentDevKey;
-                        if (result.Result.Error != null)
-                        {
-                            Console.WriteLine(PlayFabUtil.GetErrorReport(result.Result.Error));
-                            callback(false,null, null);
-                            return;
-                        }
-                        if (result.IsCompleted)
-                        {
-                            var version = result.Result.Result.Catalog[0].CatalogVersion;
-                            callback(true, version, result.Result.Result.Catalog);
-                        }
-                    });
-
+            var result = await PlayFabAdminAPI.GetCatalogItemsAsync(new PlayFab.AdminModels.GetCatalogItemsRequest());
+            PlayFabSettings.TitleId = currentPlayFabTitleId;
+            PlayFabSettings.DeveloperSecretKey = currentDevKey;
+            if (result.Error != null)
+            {
+                Console.WriteLine(PlayFabUtil.GetErrorReport(result.Error));
+                return null;
+            }
+            //var version = result.Result.Catalog[0].CatalogVersion;
+            return result.Result.Catalog;
         }
 
-        public static void UpdateCatalogData(string titleId, string catalogVersion, bool isDefault, List<PlayFab.AdminModels.CatalogItem> catalog, Action<bool> callback)
+        // NOTE: If there is an existing catalog with the version number in question, it will be deleted and replaced with only the items specified in this call.
+        async public static Task<bool> UpdateCatalogData(string titleId, string catalogVersion, bool isDefault, List<PlayFab.AdminModels.CatalogItem> catalog)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -415,31 +379,23 @@ namespace PlayFabPowerTools.Services
             var title = FindTitle(titleId);
             PlayFabSettings.TitleId = titleId;
             PlayFabSettings.DeveloperSecretKey = title.SecretKey;
-            var task = PlayFabAdminAPI.SetCatalogItemsAsync(new PlayFab.AdminModels.UpdateCatalogItemsRequest()
-                {
-                    Catalog = catalog,
-                    CatalogVersion = catalogVersion,
-                    SetAsDefaultCatalog = isDefault 
-                })
-                .ContinueWith(
-                    (result) =>
-                    {
-                        PlayFabSettings.TitleId = currentPlayFabTitleId;
-                        PlayFabSettings.DeveloperSecretKey = currentDevKey;
-                        if (result.Result.Error != null)
-                        {
-                            Console.WriteLine(PlayFabUtil.GetErrorReport(result.Result.Error));
-                            callback(false);
-                            return;
-                        }
-                        if (result.IsCompleted)
-                        {
-                            callback(true);
-                        }
-                    });
+            var result = await PlayFabAdminAPI.SetCatalogItemsAsync(new PlayFab.AdminModels.UpdateCatalogItemsRequest()
+            {
+                Catalog = catalog,
+                CatalogVersion = catalogVersion,
+                SetAsDefaultCatalog = isDefault
+            });
+            PlayFabSettings.TitleId = currentPlayFabTitleId;
+            PlayFabSettings.DeveloperSecretKey = currentDevKey;
+            if (result.Error != null)
+            {
+                Console.WriteLine(PlayFabUtil.GetErrorReport(result.Error));
+                return false;
+            }
+            return true;
         }
 
-        public static void GetDropTableData(string titleId, Action<bool, Dictionary<string, PlayFab.AdminModels.RandomResultTableListing>> callback)
+        async public static Task<Dictionary<string, PlayFab.AdminModels.RandomResultTableListing>> GetDropTableData(string titleId)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -448,28 +404,19 @@ namespace PlayFabPowerTools.Services
             PlayFabSettings.TitleId = titleId;
             PlayFabSettings.DeveloperSecretKey = title.SecretKey;
 
-            var task = PlayFabAdminAPI.GetRandomResultTablesAsync(new PlayFab.AdminModels.GetRandomResultTablesRequest())
-                .ContinueWith(
-                    (result) =>
-                    {
-                        PlayFabSettings.TitleId = currentPlayFabTitleId;
-                        PlayFabSettings.DeveloperSecretKey = currentDevKey;
-                        Task<PlayFabResult<PlayFab.AdminModels.GetRandomResultTablesResult>> taskC = result as Task<PlayFabResult<PlayFab.AdminModels.GetRandomResultTablesResult>>;
-                        if (taskC.Result.Error != null)
-                        {
-                            Console.WriteLine(PlayFabUtil.GetErrorReport(taskC.Result.Error));
-                            callback(false, null);
-                            return;
-                        }
-                        if (result.IsCompleted)
-                        {
-                            callback(true, taskC.Result.Result.Tables);
-                        }
-                    });
+            var result = await PlayFabAdminAPI.GetRandomResultTablesAsync(new PlayFab.AdminModels.GetRandomResultTablesRequest());
+            PlayFabSettings.TitleId = currentPlayFabTitleId;
+            PlayFabSettings.DeveloperSecretKey = currentDevKey;
+            if (result.Error != null)
+            {
+                Console.WriteLine(PlayFabUtil.GetErrorReport(result.Error));
+                return null;
+            }
 
+            return result.Result.Tables;
         }
 
-        public static void UpdateDropTableData(string titleId, List<RandomResultTable> dropTables, Action<bool> callback)
+        async public static Task<bool> UpdateDropTableData(string titleId, List<RandomResultTable> dropTables)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -478,30 +425,21 @@ namespace PlayFabPowerTools.Services
             PlayFabSettings.TitleId = titleId;
             PlayFabSettings.DeveloperSecretKey = title.SecretKey;
 
-            var task = PlayFabAdminAPI.UpdateRandomResultTablesAsync(new PlayFab.AdminModels.UpdateRandomResultTablesRequest()
+            var result = await PlayFabAdminAPI.UpdateRandomResultTablesAsync(new PlayFab.AdminModels.UpdateRandomResultTablesRequest()
             {
                 Tables = dropTables
+            });
+            PlayFabSettings.TitleId = currentPlayFabTitleId;
+            PlayFabSettings.DeveloperSecretKey = currentDevKey;
+            if (result.Error != null)
+            {
+                Console.WriteLine(PlayFabUtil.GetErrorReport(result.Error));
+                return false;
             }
-            )
-                .ContinueWith(
-                    (result) =>
-                    {
-                        PlayFabSettings.TitleId = currentPlayFabTitleId;
-                        PlayFabSettings.DeveloperSecretKey = currentDevKey;
-                        if (result.Result.Error != null)
-                        {
-                            Console.WriteLine(PlayFabUtil.GetErrorReport(result.Result.Error));
-                            callback(false);
-                            return;
-                        }
-                        if (result.IsCompleted)
-                        {
-                            callback(true);
-                        }
-                    });
+            return true;
         }
 
-        public static void GetStoreData(string titleId, string storeId,  Action<bool, string, string, StoreMarketingModel, List<PlayFab.AdminModels.StoreItem>> callback)
+        async public static Task<GetStoreItemsResult> GetStoreData(string titleId, string storeId)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -510,33 +448,26 @@ namespace PlayFabPowerTools.Services
             PlayFabSettings.TitleId = titleId;
             PlayFabSettings.DeveloperSecretKey = title.SecretKey;
 
-            var task = PlayFabAdminAPI.GetStoreItemsAsync(new PlayFab.AdminModels.GetStoreItemsRequest()
+            var result = await PlayFabAdminAPI.GetStoreItemsAsync(new PlayFab.AdminModels.GetStoreItemsRequest()
             {
                 StoreId = storeId
-            })
-                .ContinueWith(
-                    (result) =>
-                    {
-                        PlayFabSettings.TitleId = currentPlayFabTitleId;
-                        PlayFabSettings.DeveloperSecretKey = currentDevKey;
-                        if (result.Result.Error != null)
-                        {
-                            Console.WriteLine("Get Store Error: " + PlayFabUtil.GetErrorReport(result.Result.Error));
-                            callback(false, null, null, null, null);
-                            return;
-                        }
-                        if (result.IsCompleted)
-                        {
-                            var version = result.Result.Result.CatalogVersion;
-                            var marketingModel = result.Result.Result.MarketingData;
-                            var currentStoreId = result.Result.Result.StoreId;
-                            callback(true, version, currentStoreId, marketingModel, result.Result.Result.Store);
-                        }
-                    });
+            });
+              
+            PlayFabSettings.TitleId = currentPlayFabTitleId;
+            PlayFabSettings.DeveloperSecretKey = currentDevKey;
+            if (result.Error != null)
+            {
+                Console.WriteLine("Get Store Error: " + PlayFabUtil.GetErrorReport(result.Error));
+                return null;
+            }
+            //var version = result.Result.CatalogVersion;
+            //var marketingModel = result.Result.MarketingData;
+            //var currentStoreId = result.Result.StoreId;
 
+            return result.Result;
         }
 
-        public static void UpdateStoreData(string titleId,string storeId, string catalogVersion, StoreMarketingModel marketingModel, List<PlayFab.AdminModels.StoreItem> store, Action<bool> callback)
+        async public static Task<bool> UpdateStoreData(string titleId, string storeId, string catalogVersion, StoreMarketingModel marketingModel, List<PlayFab.AdminModels.StoreItem> store)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -544,33 +475,31 @@ namespace PlayFabPowerTools.Services
             var title = FindTitle(titleId);
             PlayFabSettings.TitleId = titleId;
             PlayFabSettings.DeveloperSecretKey = title.SecretKey;
-            Console.WriteLine("Updating Store: " + storeId + " on title" + titleId);
-            var task = PlayFabAdminAPI.SetStoreItemsAsync(new PlayFab.AdminModels.UpdateStoreItemsRequest()
-                {
-                    CatalogVersion = catalogVersion,
-                    StoreId = storeId,
-                    MarketingData = marketingModel,
-                    Store = store
-                })
-                .ContinueWith(
-                    (result) =>
-                    {
-                        PlayFabSettings.TitleId = currentPlayFabTitleId;
-                        PlayFabSettings.DeveloperSecretKey = currentDevKey;
-                        if (result.Result.Error != null)
-                        {
-                            Console.WriteLine("Update Store Error: " + PlayFabUtil.GetErrorReport(result.Result.Error));
-                            callback(false);
-                            return;
-                        }
-                        if (result.IsCompleted)
-                        {
-                            callback(true);
-                        }
-                    });
+            //Console.WriteLine("Updating Store: " + storeId + " on title" + titleId);
+            var result = await PlayFabAdminAPI.SetStoreItemsAsync(new PlayFab.AdminModels.UpdateStoreItemsRequest()
+            {
+                CatalogVersion = catalogVersion,
+                StoreId = storeId,
+                MarketingData = marketingModel,
+                Store = store
+            });
+            PlayFabSettings.TitleId = currentPlayFabTitleId;
+            PlayFabSettings.DeveloperSecretKey = currentDevKey;
+            if (result.Error != null)
+            {
+                Console.WriteLine("Update Store Error: " + PlayFabUtil.GetErrorReport(result.Error));
+                return false;
+            }
+            return true;
         }
 
-        public static void DownloadFile(string titleId, string path, ContentInfo content, Action<bool, string, ContentInfo> callback)
+
+        public class DownloadedFile
+        {
+            public ContentInfo Data;
+            public string FilePath;
+        }
+        async public static Task<DownloadedFile> DownloadFile(string titleId, string path, ContentInfo content)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -579,42 +508,33 @@ namespace PlayFabPowerTools.Services
             PlayFabSettings.TitleId = titleId;
             PlayFabSettings.DeveloperSecretKey = title.SecretKey;
 
-            PlayFabServerAPI.GetContentDownloadUrlAsync(new GetContentDownloadUrlRequest()
+            var result = await PlayFabServerAPI.GetContentDownloadUrlAsync(new GetContentDownloadUrlRequest()
             {
                 Key = content.Key,
                 HttpMethod = "GET"
-            }).ContinueWith((result) =>
-            {
-                if (result.Result.Error != null)
-                {
-                    Console.WriteLine(PlayFabUtil.GetErrorReport(result.Result.Error));
-                    callback(false, null, null);
-                    return;
-                }
-
-                if (result.IsCompleted)
-                {
-                    var folderPathArray = content.Key.Split('/');
-                    var fileName = folderPathArray.ToList().Last();
-
-                    var filePath = string.Format("{0}\\{1}", path, fileName);
-                    PlayFabExtensions.DownloadFile(result.Result.Result.URL, filePath, (success) =>
-                    {
-                        PlayFabSettings.TitleId = currentPlayFabTitleId;
-                        PlayFabSettings.DeveloperSecretKey = currentDevKey;
-                        if (success)
-                        {
-                            callback(true, filePath, content);
-                            return;
-                        }
-                        callback(false, null, null);
-                    });
-                }
             });
+            if (result.Error != null)
+            {
+                Console.WriteLine(PlayFabUtil.GetErrorReport(result.Error));
+                return null;
+            }
+
+            var folderPathArray = content.Key.Split('/');
+            var fileName = folderPathArray.ToList().Last();
+
+            var filePath = string.Format("{0}\\{1}", path, fileName);
+            var success = await PlayFabExtensions.DownloadFile(result.Result.URL, filePath);
+            PlayFabSettings.TitleId = currentPlayFabTitleId;
+            PlayFabSettings.DeveloperSecretKey = currentDevKey;
+            if (!success)
+            {
+                return null;
+            }
+            return new DownloadedFile() { Data = content, FilePath = filePath };
         }
 
 
-        public static void UploadFile(string titleId, CdnFileDataMigration.UploadFile fileInfo, Action<bool> callback)
+        async public static Task<bool> UploadFile(string titleId, DownloadedFile fileInfo)
         {
             var currentPlayFabTitleId = PlayFabSettings.TitleId;
             var currentDevKey = PlayFabSettings.DeveloperSecretKey;
@@ -623,18 +543,44 @@ namespace PlayFabPowerTools.Services
             PlayFabSettings.TitleId = titleId;
             PlayFabSettings.DeveloperSecretKey = title.SecretKey;
 
-            var key = fileInfo.FilePath.Split('/').ToList()[fileInfo.FilePath.Split('/').ToList().Count-1];
+            var key = fileInfo.FilePath.Split('/').ToList()[fileInfo.FilePath.Split('/').ToList().Count - 1];
             var type = MimeMapping.GetMimeMapping(key);
-            PlayFabAdminAPI.GetContentUploadUrlAsync(new GetContentUploadUrlRequest()
+            var result = await PlayFabAdminAPI.GetContentUploadUrlAsync(
+                new GetContentUploadUrlRequest()
+                {
+                    Key = fileInfo.Data.Key,
+                    ContentType = type
+                }
+            );
+            if (result.Error != null)
             {
-                Key = fileInfo.Data.Key,
-                ContentType = type
-            }).ContinueWith((result) =>
+                Console.WriteLine(PlayFabUtil.GetErrorReport(result.Error));
+                return false;
+            }
+            PlayFabSettings.TitleId = currentPlayFabTitleId;
+            PlayFabSettings.DeveloperSecretKey = currentDevKey;
+
+            bool success = await PlayFabExtensions.UploadFile(result.Result.URL, fileInfo.FilePath);
+            if (!success)
             {
-                PlayFabSettings.TitleId = currentPlayFabTitleId;
-                PlayFabSettings.DeveloperSecretKey = currentDevKey;
-                PlayFabExtensions.UploadFile(result.Result.Result.URL, fileInfo.FilePath, callback);
-            });
+                return false;
+            }
+            return true;
+        }
+
+        async public void DeleteFile(string titleId, DownloadedFile fileInfo)
+        {
+            var currentPlayFabTitleId = PlayFabSettings.TitleId;
+            var currentDevKey = PlayFabSettings.DeveloperSecretKey;
+
+            var title = FindTitle(titleId);
+            PlayFabSettings.TitleId = titleId;
+            PlayFabSettings.DeveloperSecretKey = title.SecretKey;
+
+            var key = fileInfo.FilePath.Split('/').ToList()[fileInfo.FilePath.Split('/').ToList().Count - 1];
+            var type = MimeMapping.GetMimeMapping(key);
+            var file = new DeleteContentRequest();
+            var result = await PlayFabAdminAPI.DeleteContentAsync(file);
         }
 
 
@@ -652,8 +598,7 @@ namespace PlayFabPowerTools.Services
                     {
                         Settings = obj;
                     }
-                }
-                catch
+                } catch
                 {
                     Console.WriteLine("Could not load playfab settings file.");
                 }
@@ -672,13 +617,12 @@ namespace PlayFabPowerTools.Services
             try
             {
                 var settings = JsonConvert.SerializeObject(Settings);
-                System.IO.File.WriteAllText(path+file, settings);
-            }
-            catch
+                System.IO.File.WriteAllText(path + file, settings);
+            } catch
             {
                 Console.WriteLine("Could not save playfab settings file.");
             }
-            
+
         }
 
         private static Title FindTitle(string titleId)
