@@ -435,9 +435,6 @@ namespace PlayFabPowerTools.Packages
         //        return;
         //    }
 
-        //    // Compare shit to find out what nees to be changed
-        //    // Then Do some other shit
-
         //    List<PlayFabService.DownloadedFile> downloadedFiles = new List<PlayFabService.DownloadedFile>();
         //    while(contentList.Count > 0)
         //    {
