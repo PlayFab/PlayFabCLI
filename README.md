@@ -1,8 +1,20 @@
 # PlayFab CLI
-PlayFab CLI  is a command line interface that can be used to perform various admin actions on a title and do title migrations.
+PlayFab CLI is a command line interface that can be used to perform various admin actions on a title and do title migrations.
 
-***NOTE:*** This tool has been completely re-factored and is no longer the "Script" tool that it was.  It is much more useful now and new features can be added to it more easily.
+## Community Support
 
+This is a community supported tool. 
+
+For new and existing users, you can use the current version as it is. The team at Microsoft is no longer providing support or making updates to this tool. You can continue to get community support and publish your own updates at [PlayFab forums](https://community.playfab.com/index.html).
+
+What you have to do: 
+* Fork this repo
+* Push your updates
+* Make sure you follow the Apache License, Version 2.0 guidelines for reproduction and modification, and document that Microsoft PlayFab is the original creator
+* Go to [PlayFab forums](https://community.playfab.com/index.html)
+* Write a post with a link to your forked repo so everyone knows about it
+
+We're excited to hear from you. Thank you for your support and happy coding.
 ## Supported Platforms
 **Currently for Windows Only**
 
