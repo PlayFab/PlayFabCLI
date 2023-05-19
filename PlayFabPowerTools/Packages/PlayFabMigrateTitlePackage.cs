@@ -380,6 +380,7 @@ namespace PlayFabPowerTools.Packages
                             });
                             do
                             {
+                                Thread.Sleep(500);
                                 //block until done.
                             } while (!isDone);
                             break;
@@ -611,24 +612,33 @@ namespace PlayFabPowerTools.Packages
 
                     if (!_droptableData.ToProcessed && _droptableData.FromProcessed)
                     {
-                        Console.WriteLine("Updating Drop Tables on Title: " + _commandArgs.ToTitleId);
-                        PlayFabService.UpdateDropTableData(_commandArgs.ToTitleId, _droptableData.Data.Dequeue(),
-                            (success) =>
-                            {
-                                if (!success)
+                        if (_droptableData.Data.Count > 0)
+                        {
+                            Console.WriteLine("Updating Drop Tables on Title: " + _commandArgs.ToTitleId);
+                            PlayFabService.UpdateDropTableData(_commandArgs.ToTitleId, _droptableData.Data.Dequeue(),
+                                (success) =>
                                 {
-                                    Console.WriteLine("Save Catalog Failed, skipping.");
-                                    SetNextState();
-                                }
-                                //_catalogData.Data = null;
-                                //_catalogData.CatalogVersion = null;
+                                    if (!success)
+                                    {
+                                        Console.WriteLine("Save Catalog Failed, skipping.");
+                                        SetNextState();
+                                    }
+                                    //_catalogData.Data = null;
+                                    //_catalogData.CatalogVersion = null;
 
-                                if (_droptableData.Data.Count == 0)
-                                {
-                                    _droptableData.Data = null;
-                                    _droptableData.ToProcessed = true;
-                                }
-                            });
+                                    if (_droptableData.Data.Count == 0)
+                                    {
+                                        _droptableData.Data = null;
+                                        _droptableData.ToProcessed = true;
+                                    }
+                                });
+                        }
+                        else
+                        {
+                            _droptableData.Data = null;
+                            _droptableData.ToProcessed = true;
+                            SetNextState();
+                        }
                     }
                     #endregion
                     break;
