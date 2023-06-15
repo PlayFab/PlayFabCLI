@@ -63,15 +63,32 @@ namespace PlayFabPowerTools.Services
             set { Settings.DeveloperClientToken = value; }
         }
 
-        public static void Login(string user, string pass, Action<bool,string> callback)
+        public static void Login(string user, string pass, string twofa, Action<bool,string> callback)
         {
-            var loginTask = PlayFabExtensions.Login(new LoginRequest()
+            Task<PlayFabResult<LoginResult>> loginTask;
+
+            if (String.IsNullOrEmpty(twofa))
             {
-                Email = user,
-                Password = pass,
-                DeveloperToolProductName = "PlayFabPowerTools CLI",
-                DeveloperToolProductVersion = "1.01"
-            }).ContinueWith((result) =>
+                loginTask = PlayFabExtensions.Login(new LoginRequest()
+                {
+                    Email = user,
+                    Password = pass,
+                    DeveloperToolProductName = "PlayFabPowerTools CLI",
+                    DeveloperToolProductVersion = "1.01"
+                });
+            }
+            else
+            {
+                loginTask = PlayFabExtensions.Login(new LoginRequest()
+                {
+                    Email = user,
+                    Password = pass,
+                    TwoFactorAuth = twofa,
+                    DeveloperToolProductName = "PlayFabPowerTools CLI",
+                    DeveloperToolProductVersion = "1.01"
+                });
+            } 
+            loginTask.ContinueWith((result) =>
             {
                 if (result.Result.Error != null)
                 {
